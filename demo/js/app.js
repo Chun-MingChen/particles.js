@@ -38,11 +38,18 @@ particlesJS('particles-js',
         "polygon": {
           "nb_sides": 5
         },
-        "image": {
-          "src": "http://coloradopeakpolitics.com/wp-content/uploads/2016/08/025Pikachu_XY_anime_3.png",
-          "width": 100,
-          "height": 100
-        }
+        "image": [
+          {
+            "src": "http://coloradopeakpolitics.com/wp-content/uploads/2016/08/025Pikachu_XY_anime_3.png",
+            "width": 100,
+            "height": 100
+          },
+          {
+            "src": "http://pokemontw.com/poke/007Squirtle.png",
+            "width": 100,
+            "height": 100
+          }
+        ]
       },
       "opacity": {
         "value": 0.5,
@@ -73,7 +80,7 @@ particlesJS('particles-js',
       },
       "move": {
         "enable": true,
-        "speed": 6,
+        "speed": 2,
         "direction": "bottom",
         "random": false,
         "straight": false,
