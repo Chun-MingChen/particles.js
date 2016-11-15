@@ -11,6 +11,10 @@ var pJS = function(tag_id, params){
 
   var canvas_el = document.querySelector('#'+tag_id+' > .particles-js-canvas-el');
 
+  /* some important attributes about this  particleSymtem
+    1. pJS.particles.array : store all the particles instances, ask for total account at the beginning
+
+   */
   /* particles.js variables with default values */
   this.pJS = {
     canvas: {
@@ -134,6 +138,7 @@ var pJS = function(tag_id, params){
     tmp: {}
   };
 
+  // pJS is equal to this particleSystem
   var pJS = this.pJS;
 
   /* params settings */
@@ -141,6 +146,7 @@ var pJS = function(tag_id, params){
     Object.deepExtend(pJS, params);
   }
 
+  // register
   pJS.tmp.obj = {
     size_value: pJS.particles.size.value,
     size_anim_speed: pJS.particles.size.anim.speed,
@@ -157,9 +163,9 @@ var pJS = function(tag_id, params){
   pJS.fn.retinaInit = function(){
 
     if(pJS.retina_detect && window.devicePixelRatio > 1){
-      pJS.canvas.pxratio = window.devicePixelRatio; 
+      pJS.canvas.pxratio = window.devicePixelRatio;
       pJS.tmp.retina = true;
-    } 
+    }
     else{
       pJS.canvas.pxratio = 1;
       pJS.tmp.retina = false;
@@ -237,7 +243,7 @@ var pJS = function(tag_id, params){
 
 
   /* --------- pJS functions - particles ----------- */
-
+  // generate a new particle
   pJS.fn.particle = function(color, opacity, position){
 
     /* size */
@@ -363,10 +369,9 @@ var pJS = function(tag_id, params){
     this.vx_i = this.vx;
     this.vy_i = this.vy;
 
-    
+
 
     /* if shape is image */
-
     var shape_type = pJS.particles.shape.type;
     if(typeof(shape_type) == 'object'){
       if(shape_type instanceof Array){
@@ -378,31 +383,61 @@ var pJS = function(tag_id, params){
     }
 
     if(this.shape == 'image'){
-      var sh = pJS.particles.shape;
-      this.img = {
-        src: sh.image.src,
-        ratio: sh.image.width / sh.image.height
-      }
-      if(!this.img.ratio) this.img.ratio = 1;
-      if(pJS.tmp.img_type == 'svg' && pJS.tmp.source_svg != undefined){
-        pJS.fn.vendors.createSvgImg(this);
-        if(pJS.tmp.pushing){
-          this.img.loaded = false;
+      if (pJS.particles.shape.image instanceof Array) {
+        var sh = pJS.particles.shape;
+
+        // randomly choose image index
+        var randomIndex = Math.floor(Math.random() * sh.image.length);
+        var image_selected = sh.image[randomIndex];
+
+        // particle attributes
+        // this.img.index record which image is used
+        this.img = {
+          src: image_selected.src,
+          ratio: image_selected.width / image_selected.height,
+          index: randomIndex
+        }
+        // if ratio is not setting
+        if(!this.img.ratio) this.img.ratio = 1;
+
+        /*
+          if img resource are svg
+          svg are not support now
+         */
+        // if(pJS.tmp.img_type == 'svg' && pJS.tmp.source_svg != undefined){
+        //   pJS.fn.vendors.createSvgImg(this);
+        //   if(pJS.tmp.pushing){
+        //     this.img.loaded = false;
+        //   }
+        // }
+
+
+      } else {
+        var sh = pJS.particles.shape;
+        this.img = {
+          src: sh.image.src,
+          ratio: sh.image.width / sh.image.height
+        }
+        if(!this.img.ratio) this.img.ratio = 1;
+        if(pJS.tmp.img_type == 'svg' && pJS.tmp.source_svg != undefined){
+          pJS.fn.vendors.createSvgImg(this);
+          if(pJS.tmp.pushing){
+            this.img.loaded = false;
+          }
         }
       }
     }
 
-    
 
   };
 
 
   pJS.fn.particle.prototype.draw = function() {
-
+    // p is the reference of this particle
     var p = this;
 
     if(p.radius_bubble != undefined){
-      var radius = p.radius_bubble; 
+      var radius = p.radius_bubble;
     }else{
       var radius = p.radius;
     }
@@ -459,7 +494,7 @@ var pJS = function(tag_id, params){
       break;
 
       case 'image':
-
+        // image render function
         function draw(){
           pJS.canvas.ctx.drawImage(
             img_obj,
@@ -470,14 +505,30 @@ var pJS = function(tag_id, params){
           );
         }
 
-        if(pJS.tmp.img_type == 'svg'){
-          var img_obj = p.img.obj;
-        }else{
-          var img_obj = pJS.tmp.img_obj;
-        }
+        // if images are array ,given over one image sourece
+        if (pJS.particles.shape.image instanceof Array) {
+          var imageIndex = p.img.index;
+          if(pJS.tmp.img_type == 'svg'){
+            // var img_obj = p.img.obj;
+          } else {
+            var img_obj = pJS.tmp.img_obj[imageIndex];
+          }
 
-        if(img_obj){
-          draw();
+          if(img_obj){
+            draw();
+          }
+
+        } else {
+          if(pJS.tmp.img_type == 'svg'){
+            var img_obj = p.img.obj;
+          }else{
+            var img_obj = pJS.tmp.img_obj;
+          }
+
+          if(img_obj){
+            draw();
+          }
+
         }
 
       break;
@@ -491,9 +542,9 @@ var pJS = function(tag_id, params){
       pJS.canvas.ctx.lineWidth = pJS.particles.shape.stroke.width;
       pJS.canvas.ctx.stroke();
     }
-    
+
     pJS.canvas.ctx.fill();
-    
+
   };
 
 
@@ -664,7 +715,7 @@ var pJS = function(tag_id, params){
     pJS.tmp.count_svg = 0;
     pJS.fn.particlesEmpty();
     pJS.fn.canvasClear();
-    
+
     /* restart */
     pJS.fn.vendors.start();
 
@@ -684,14 +735,14 @@ var pJS = function(tag_id, params){
 
       var opacity_line = pJS.particles.line_linked.opacity - (dist / (1/pJS.particles.line_linked.opacity)) / pJS.particles.line_linked.distance;
 
-      if(opacity_line > 0){        
-        
+      if(opacity_line > 0){
+
         /* style */
         var color_line = pJS.particles.line_linked.color_rgb_line;
         pJS.canvas.ctx.strokeStyle = 'rgba('+color_line.r+','+color_line.g+','+color_line.b+','+opacity_line+')';
         pJS.canvas.ctx.lineWidth = pJS.particles.line_linked.width;
         //pJS.canvas.ctx.lineCap = 'round'; /* performance issue */
-        
+
         /* path */
         pJS.canvas.ctx.beginPath();
         pJS.canvas.ctx.moveTo(p1.x, p1.y);
@@ -725,7 +776,7 @@ var pJS = function(tag_id, params){
       p2.vy += ay;
 
     }
-    
+
 
   }
 
@@ -805,7 +856,7 @@ var pJS = function(tag_id, params){
       if(dist_mouse <= pJS.interactivity.modes.bubble.distance){
 
         if(ratio >= 0 && pJS.interactivity.status == 'mousemove'){
-          
+
           /* size */
           if(pJS.interactivity.modes.bubble.size != pJS.particles.size.value){
 
@@ -854,7 +905,7 @@ var pJS = function(tag_id, params){
       if(pJS.interactivity.status == 'mouseleave'){
         init();
       }
-    
+
     }
 
     /* on click event */
@@ -933,7 +984,7 @@ var pJS = function(tag_id, params){
           repulseRadius = pJS.interactivity.modes.repulse.distance,
           velocity = 100,
           repulseFactor = clamp((1/repulseRadius)*(-1*Math.pow(dist_mouse/repulseRadius,2)+1)*repulseRadius*velocity, 0, 50);
-      
+
       var pos = {
         x: p.x + normVec.x * repulseFactor,
         y: p.y + normVec.y * repulseFactor
@@ -946,7 +997,7 @@ var pJS = function(tag_id, params){
         p.x = pos.x;
         p.y = pos.y;
       }
-    
+
     }
 
 
@@ -1001,7 +1052,7 @@ var pJS = function(tag_id, params){
         // }else{
         //   process();
         // }
-        
+
 
       }else{
 
@@ -1009,7 +1060,7 @@ var pJS = function(tag_id, params){
 
           p.vx = p.vx_i;
           p.vy = p.vy_i;
-        
+
         }
 
       }
@@ -1039,7 +1090,7 @@ var pJS = function(tag_id, params){
           pJS.canvas.ctx.strokeStyle = 'rgba('+color_line.r+','+color_line.g+','+color_line.b+','+opacity_line+')';
           pJS.canvas.ctx.lineWidth = pJS.particles.line_linked.width;
           //pJS.canvas.ctx.lineCap = 'round'; /* performance issue */
-          
+
           /* path */
           pJS.canvas.ctx.beginPath();
           pJS.canvas.ctx.moveTo(p.x, p.y);
@@ -1155,7 +1206,7 @@ var pJS = function(tag_id, params){
         }
 
       });
-        
+
     }
 
 
@@ -1270,41 +1321,93 @@ var pJS = function(tag_id, params){
   pJS.fn.vendors.loadImg = function(type){
 
     pJS.tmp.img_error = undefined;
+    // if render for multi-image
+    if (type instanceof Array) {
+      // initialize img_obj
+      pJS.tmp.img_obj = [];
 
-    if(pJS.particles.shape.image.src != ''){
+      type.forEach(function(imageType, index) {
 
-      if(type == 'svg'){
+        // image src cannot be empty
+        if (pJS.particles.shape.image[index].src !== '') {
+          if (imageType === 'svg') {
 
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', pJS.particles.shape.image.src);
-        xhr.onreadystatechange = function (data) {
-          if(xhr.readyState == 4){
-            if(xhr.status == 200){
-              pJS.tmp.source_svg = data.currentTarget.response;
+            // image svg not support now
+            // var xhr = new XMLHttpRequest();
+            // xhr.open('GET', pJS.particles.shape.image.src);
+            // xhr.onreadystatechange = function (data) {
+            //   if(xhr.readyState == 4){
+            //     if(xhr.status == 200){
+            //       pJS.tmp.source_svg = data.currentTarget.response;
+            //       pJS.fn.vendors.checkBeforeDraw();
+            //     }else{
+            //       console.log('Error pJS - Image not found');
+            //       pJS.tmp.img_error = true;
+            //     }
+            //   }
+            // }
+            // xhr.send();
+
+          } else {
+            // create img HTML DOM
+            var img = new Image();
+            img.addEventListener('load', function(){
+              pJS.tmp.img_obj[index] = img;
               pJS.fn.vendors.checkBeforeDraw();
-            }else{
-              console.log('Error pJS - Image not found');
-              pJS.tmp.img_error = true;
+            });
+
+            img.src = pJS.particles.shape.image[index].src;
+
+          }
+
+        } else {
+          console.log('Error pJS - No image.src');
+          pJS.tmp.img_error = true;
+          return;
+        }
+
+      })
+
+    } else {
+      if(pJS.particles.shape.image.src != ''){
+
+        if(type == 'svg'){
+
+          var xhr = new XMLHttpRequest();
+          xhr.open('GET', pJS.particles.shape.image.src);
+          xhr.onreadystatechange = function (data) {
+            if(xhr.readyState == 4){
+              if(xhr.status == 200){
+                pJS.tmp.source_svg = data.currentTarget.response;
+                pJS.fn.vendors.checkBeforeDraw();
+              }else{
+                console.log('Error pJS - Image not found');
+                pJS.tmp.img_error = true;
+              }
             }
           }
+          xhr.send();
+
+        } else {
+
+          var img = new Image();
+          img.addEventListener('load', function(){
+            pJS.tmp.img_obj = img;
+            pJS.fn.vendors.checkBeforeDraw();
+          });
+          img.src = pJS.particles.shape.image.src;
+
         }
-        xhr.send();
 
       }else{
-
-        var img = new Image();
-        img.addEventListener('load', function(){
-          pJS.tmp.img_obj = img;
-          pJS.fn.vendors.checkBeforeDraw();
-        });
-        img.src = pJS.particles.shape.image.src;
-
+        console.log('Error pJS - No image.src');
+        pJS.tmp.img_error = true;
       }
 
-    }else{
-      console.log('Error pJS - No image.src');
-      pJS.tmp.img_error = true;
+
     }
+
+
 
   };
 
@@ -1359,7 +1462,7 @@ var pJS = function(tag_id, params){
           pJS.fn.vendors.init();
           pJS.fn.vendors.draw();
         }
-        
+
       }
 
     }else{
@@ -1387,10 +1490,24 @@ var pJS = function(tag_id, params){
 
 
   pJS.fn.vendors.start = function(){
-
+    // load image if it's necessary for image rendering
     if(isInArray('image', pJS.particles.shape.type)){
-      pJS.tmp.img_type = pJS.particles.shape.image.src.substr(pJS.particles.shape.image.src.length - 3);
-      pJS.fn.vendors.loadImg(pJS.tmp.img_type);
+
+      if (pJS.particles.shape.image instanceof Array) {
+        // get extension of image
+        pJS.tmp.img_type = pJS.particles.shape.image.map(function(img) {
+
+          return img.src.substr(img.src.length - 3);
+        });
+        pJS.fn.vendors.loadImg(pJS.tmp.img_type);
+
+      } else {
+        // get extension of image
+        pJS.tmp.img_type = pJS.particles.shape.image.src.substr(pJS.particles.shape.image.src.length - 3);
+        pJS.fn.vendors.loadImg(pJS.tmp.img_type);
+
+      }
+
     }else{
       pJS.fn.vendors.checkBeforeDraw();
     }
@@ -1406,7 +1523,7 @@ var pJS = function(tag_id, params){
   pJS.fn.vendors.eventsListeners();
 
   pJS.fn.vendors.start();
-  
+
 
 
 };
