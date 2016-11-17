@@ -1366,7 +1366,7 @@ var pJS = function(tag_id, params){
           return;
         }
 
-      })
+      });
 
     } else {
       if(pJS.particles.shape.image.src != ''){
@@ -1450,22 +1450,77 @@ var pJS = function(tag_id, params){
 
   pJS.fn.vendors.checkBeforeDraw = function(){
 
-    // if shape is image
-    if(pJS.particles.shape.type == 'image'){
+    if(isInArray('image', pJS.particles.shape.type)) {
+      if (pJS.particles.shape.image instanceof Array) {
 
-      if(pJS.tmp.img_type == 'svg' && pJS.tmp.source_svg == undefined){
-        pJS.tmp.checkAnimFrame = requestAnimFrame(check);
-      }else{
-        //console.log('images loaded! cancel check');
-        cancelRequestAnimFrame(pJS.tmp.checkAnimFrame);
-        if(!pJS.tmp.img_error){
-          pJS.fn.vendors.init();
-          pJS.fn.vendors.draw();
+      // check it will only init and draw for once for multi-image
+      // the following are the situation that may encounter
+      // [svg]
+      // [img]
+      // [img, img]
+      // [svg, svg]
+      // [img, svg, svg]
+      // [svg, img, img]
+      // [img, img, svg, svg]
+
+        // check the image resource without svg
+        // 'coz svg is not support for multi-image
+        var isWithoutSVG = pJS.particles.shape.image.every(function(v) {
+          return v !== 'svg';
+        });
+        if (pJS.particles.shape.image.length === 1 ) {
+
+          if(pJS.tmp.img_type[0] == 'svg' && pJS.tmp.source_svg[0] == undefined){
+            pJS.tmp.checkAnimFrame = requestAnimFrame(check);
+          } else {
+            //console.log('images loaded! cancel check');
+            cancelRequestAnimFrame(pJS.tmp.checkAnimFrame);
+            if(!pJS.tmp.img_error){
+              pJS.fn.vendors.init();
+              pJS.fn.vendors.draw();
+            }
+
+          }
+        } else if (isWithoutSVG) {
+
+          // only support multi-image without svg
+          var allCallbackResolved = Object.keys(pJS.tmp.img_obj).length === pJS.particles.shape.image.length ? true : false;
+          if (allCallbackResolved) {
+
+            cancelRequestAnimFrame(pJS.tmp.checkAnimFrame);
+            if(!pJS.tmp.img_error){
+              pJS.fn.vendors.init();
+              pJS.fn.vendors.draw();
+            }
+
+          }
+
+        } else {
+          // svg resource exsits
+          // not support
+        }
+
+      } else {
+
+        // image rendering is required, but only for one image
+        if (pJS.tmp.img_type == 'svg' && pJS.tmp.source_svg == undefined){
+          pJS.tmp.checkAnimFrame = requestAnimFrame(check);
+        } else {
+
+          //console.log('images loaded! cancel check');
+          cancelRequestAnimFrame(pJS.tmp.checkAnimFrame);
+          if(!pJS.tmp.img_error){
+            pJS.fn.vendors.init();
+            pJS.fn.vendors.draw();
+          }
+
         }
 
       }
 
-    }else{
+    } else {
+
+      // it's uncessary for waiting image loading
       pJS.fn.vendors.init();
       pJS.fn.vendors.draw();
     }
@@ -1502,13 +1557,15 @@ var pJS = function(tag_id, params){
         pJS.fn.vendors.loadImg(pJS.tmp.img_type);
 
       } else {
-        // get extension of image
+
         pJS.tmp.img_type = pJS.particles.shape.image.src.substr(pJS.particles.shape.image.src.length - 3);
         pJS.fn.vendors.loadImg(pJS.tmp.img_type);
 
       }
 
     }else{
+
+      // without pending for image loading
       pJS.fn.vendors.checkBeforeDraw();
     }
 
